@@ -42,6 +42,7 @@ export default function Roulette() {
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const rotation = useMotionValue(0);
+  const [score, setScore] = useState(100);
   const [bets, setBets] = useState<Record<string, number>>({
     "1": 0,
     "3": 0,
@@ -51,13 +52,23 @@ export default function Roulette() {
   });
 
   const handleBet = (value: string) => {
-    setBets((prev) => ({
-      ...prev,
-      [value]: prev[value] + 1,
-    }));
+    if (score >= 10) {
+      setBets((prev) => ({
+        ...prev,
+        [value]: prev[value] + 1,
+      }));
+      setScore((prev) => prev - 10);
+    } else {
+      alert("배팅할 점수가 부족합니다!");
+    }
   };
 
   const resetBets = () => {
+    const totalBets = Object.values(bets).reduce(
+      (sum, count) => sum + count * 10,
+      0
+    );
+    setScore((prev) => prev + totalBets);
     setBets({
       "1": 0,
       "3": 0,
@@ -94,12 +105,10 @@ export default function Roulette() {
     return () => unsubscribe();
   }, []);
 
-  // motion value 추가
   const shake = useMotionValue(0);
 
-  // 핀이 경계선을 통과할 때 호출
   function triggerPinShake() {
-    shake.set(8); // 오른쪽으로 순간 튐
+    shake.set(8);
     animate(shake, -8, { duration: 0.2 }).then(() =>
       animate(shake, 0, { duration: 0.1 })
     );
@@ -120,10 +129,26 @@ export default function Roulette() {
       ease: [0.33, 1, 0.68, 1],
       onComplete: () => {
         setSpinning(false);
-        const normalized = ((end % 360) + 360) % 360; // 0 ~ 359
-        const pinAngle = (360 - normalized) % 360; // 상단(핀 위치) 기준 각도
-        const index = Math.floor(pinAngle / sectorAngle); // 딱 떨어지는 섹터
-        setResult(sectors[index]);
+        const normalized = ((end % 360) + 360) % 360;
+        const pinAngle = (360 - normalized) % 360;
+        const index = Math.floor(pinAngle / sectorAngle);
+        const resultValue = sectors[index];
+        setResult(resultValue);
+
+        let winnings = 0;
+        if (bets[resultValue] > 0) {
+          const betAmount = bets[resultValue] * 10;
+          winnings = betAmount + betAmount * parseInt(resultValue);
+          setScore((prev) => prev + winnings);
+        }
+
+        setBets({
+          "1": 0,
+          "3": 0,
+          "5": 0,
+          "10": 0,
+          "20": 0,
+        });
       },
     });
   };
@@ -187,6 +212,7 @@ export default function Roulette() {
           결과: {result}
         </div>
       )}
+      <div className="text-xl font-bold text-blue-600">현재 점수: {score}</div>
       <BatPanel bets={bets} onBet={handleBet} onReset={resetBets} />
     </div>
   );
