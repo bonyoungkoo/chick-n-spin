@@ -385,7 +385,7 @@ export default function Roulette() {
           <div className="w-14 h-14 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-xl border-2 border-yellow-300 shadow-md overflow-hidden p-1">
             <div className="relative w-full h-full">
               <Image
-                src={`/assets/characters/chick${characterLevel}.png`}
+                src={`${process.env.NODE_ENV === "production" ? "/chick-n-spin" : ""}/assets/characters/chick${characterLevel}.png`}
                 alt={`Level ${characterLevel} character`}
                 fill
                 sizes="(max-width: 768px) 56px, 56px"
