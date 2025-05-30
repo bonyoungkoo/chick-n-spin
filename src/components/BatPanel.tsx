@@ -9,6 +9,7 @@ interface BetPanelProps {
   onBet: (value: string) => void;
   onReset: () => void;
   winningNumber: string | null;
+  winStreak: number;
 }
 
 const betOptions = ["1", "3", "5", "10", "20"];
@@ -42,13 +43,29 @@ const colorMap: Record<string, { bg: string; hover: string; active: string }> =
     },
   };
 
-// 배당률 설정 (각 숫자 그대로 사용)
-const multiplierMap: Record<string, number> = {
-  "1": 1, // 1배
-  "3": 3, // 3배
-  "5": 5, // 5배
-  "10": 10, // 10배
-  "20": 20, // 20배
+// 배당률 설정 (섹터 수에 따라 조정)
+const getStreakMultiplier = (streak: number): number => {
+  if (streak >= 9) return 4;
+  if (streak >= 6) return 2;
+  if (streak >= 3) return 1;
+  return 0;
+};
+
+const getStreakText = (streak: number): string => {
+  if (streak >= 9) return "4배";
+  if (streak >= 6) return "2배";
+  if (streak >= 3) return "+1배";
+  return "";
+};
+
+const calculateFinalMultiplier = (
+  baseMultiplier: number,
+  streak: number
+): number => {
+  const streakBonus = getStreakMultiplier(streak);
+  if (streakBonus === 0) return baseMultiplier;
+  if (streakBonus === 1) return baseMultiplier + 1;
+  return baseMultiplier * streakBonus;
 };
 
 export default function BetPanel({
@@ -56,6 +73,7 @@ export default function BetPanel({
   onBet,
   onReset,
   winningNumber,
+  winStreak,
 }: BetPanelProps) {
   const [lastBets, setLastBets] = useState<Record<string, number>>({});
   const [winningLED, setWinningLED] = useState<string | null>(null);
@@ -97,6 +115,12 @@ export default function BetPanel({
           const isLEDOn = value === winningLED;
           const color = colorMap[value];
           const colorValue = color.bg.replace("bg-[", "").replace("]", "");
+          const baseMultiplier = parseInt(value);
+          const finalMultiplier = calculateFinalMultiplier(
+            baseMultiplier,
+            winStreak
+          );
+          const hasStreakBonus = winStreak >= 3;
 
           return (
             <div key={value} className="flex flex-col items-center gap-1">
@@ -124,7 +148,7 @@ export default function BetPanel({
                       textShadow: `0 0 4px ${colorValue}, 0 0 8px ${colorValue}`,
                     }}
                   >
-                    +{lastBets[value] * 10 * multiplierMap[value]}
+                    +{lastBets[value] * 10 * finalMultiplier}
                   </span>
                 )}
               </div>
@@ -141,7 +165,11 @@ export default function BetPanel({
                     : {}
                 }
               >
-                {value} 배팅
+                {`x${value}`} 배팅
+                <br />
+                <span className={hasStreakBonus ? "text-red-500" : ""}>
+                  (x{finalMultiplier}배)
+                </span>
                 <br />({betAmount * 10}점)
               </button>
             </div>

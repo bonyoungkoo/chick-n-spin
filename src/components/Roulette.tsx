@@ -58,7 +58,14 @@ export default function Roulette() {
     "20": 0,
   });
 
-  const { score, setScore, addHistory } = useGameStore();
+  const {
+    score,
+    setScore,
+    addHistory,
+    winStreak,
+    bestWinStreak,
+    updateWinStreak,
+  } = useGameStore();
 
   const handleBet = (value: string) => {
     if (spinning) return;
@@ -128,6 +135,20 @@ export default function Roulette() {
     );
   }
 
+  const getStreakMultiplier = (streak: number): number => {
+    if (streak >= 9) return 4;
+    if (streak >= 6) return 2;
+    if (streak >= 3) return 1;
+    return 0;
+  };
+
+  const getStreakText = (streak: number): string => {
+    if (streak >= 9) return "4배";
+    if (streak >= 6) return "2배";
+    if (streak >= 3) return "+1배";
+    return "";
+  };
+
   const spin = () => {
     if (spinning) return;
 
@@ -172,7 +193,20 @@ export default function Roulette() {
         const isWin = bets[resultValue] > 0;
         if (isWin) {
           const betAmount = bets[resultValue] * 10;
-          winnings = betAmount + betAmount * parseInt(resultValue);
+          const baseMultiplier = parseInt(resultValue);
+          const streakBonus = getStreakMultiplier(winStreak);
+
+          if (streakBonus > 0) {
+            // 3~5회는 +1배, 6회 이상은 곱하기
+            if (streakBonus === 1) {
+              winnings = betAmount + betAmount * (baseMultiplier + streakBonus);
+            } else {
+              winnings = betAmount + betAmount * baseMultiplier * streakBonus;
+            }
+          } else {
+            winnings = betAmount + betAmount * baseMultiplier;
+          }
+
           setScore(score + winnings);
         }
 
@@ -184,6 +218,9 @@ export default function Roulette() {
           winAmount: isWin ? winnings : -totalBet,
           isWin,
         });
+
+        // 연속 성공 횟수 업데이트
+        updateWinStreak(isWin);
 
         setBets({
           "1": 0,
@@ -259,11 +296,29 @@ export default function Roulette() {
         </div>
       )}
       <div className="text-xl font-bold text-blue-600">현재 점수: {score}</div>
+      <div className="flex gap-4 text-lg items-center">
+        <div className="font-bold text-green-600">연속 성공: {winStreak}회</div>
+        {winStreak >= 3 && (
+          <div className="animate-pulse text-orange-500 font-bold flex items-center gap-1">
+            {Array(Math.min(3, Math.floor(winStreak / 3)))
+              .fill("🔥")
+              .join("")}
+            Hot Streak x{winStreak}!
+            <span className="ml-1 text-red-500">
+              ({getStreakText(winStreak)} 보너스)
+            </span>
+          </div>
+        )}
+        <div className="font-bold text-purple-600">
+          최고 기록: {bestWinStreak}회
+        </div>
+      </div>
       <BatPanel
         bets={bets}
         onBet={handleBet}
         onReset={resetBets}
         winningNumber={result}
+        winStreak={winStreak}
       />
       <BettingHistory />
     </div>
