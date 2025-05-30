@@ -36,7 +36,7 @@ const sectors = [
 ];
 
 const colorMap: Record<string, string> = {
-  "1": "#e8b334",
+  "1": "#fcd34d",
   "3": "#6bbb56",
   "5": "#4c83b5",
   "10": "#bd65a0",
