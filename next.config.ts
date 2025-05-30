@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   images: {
     loader: "default",
     path: isProduction ? "/chick-n-spin/_next/image" : "/_next/image",
+    unoptimized: true,
   },
 };
 
