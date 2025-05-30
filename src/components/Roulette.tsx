@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion, useMotionValue, animate } from "framer-motion";
 import BatPanel from "./BatPanel";
 import { useGameStore } from "@/store/useGameStore";
@@ -103,6 +103,15 @@ export default function Roulette() {
     (_, i) => i * sectorAngle
   );
 
+  const shake = useMotionValue(0);
+
+  const triggerPinShake = useCallback(() => {
+    shake.set(8);
+    animate(shake, -8, { duration: 0.2 }).then(() =>
+      animate(shake, 0, { duration: 0.1 })
+    );
+  }, [shake]);
+
   useEffect(() => {
     let prevAngle = rotation.get();
 
@@ -124,16 +133,6 @@ export default function Roulette() {
 
     return () => unsubscribe();
   }, [rotation, tickAngles, triggerPinShake]);
-
-  const shake = useMotionValue(0);
-
-  function triggerPinShake() {
-    const offset = 8;
-    shake.set(offset);
-    animate(shake, -offset, { duration: 0.1 }).then(() =>
-      animate(shake, 0, { duration: 0.1 })
-    );
-  }
 
   const getStreakMultiplier = (streak: number): number => {
     if (streak >= 9) return 4;
