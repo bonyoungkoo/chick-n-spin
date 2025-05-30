@@ -390,7 +390,7 @@ export default function Roulette() {
                 fill
                 sizes="(max-width: 768px) 56px, 56px"
                 className="object-contain drop-shadow-md transition-transform duration-200 group-hover:scale-110"
-                priority
+                unoptimized
               />
             </div>
           </div>
