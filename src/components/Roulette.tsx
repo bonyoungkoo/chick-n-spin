@@ -45,24 +45,6 @@ const colorMap: Record<string, string> = {
 const sectorCount = sectors.length;
 const sectorAngle = 360 / sectorCount;
 
-// SVG 부채꼴 경로를 생성하는 함수 추가
-const createSectorPath = (index: number) => {
-  const startAngle = index * sectorAngle;
-  const endAngle = (index + 1) * sectorAngle;
-  const startRad = (startAngle * Math.PI) / 180;
-  const endRad = (endAngle * Math.PI) / 180;
-  const radius = 150; // SVG 원의 반지름
-
-  const x1 = radius * Math.cos(startRad);
-  const y1 = radius * Math.sin(startRad);
-  const x2 = radius * Math.cos(endRad);
-  const y2 = radius * Math.sin(endRad);
-
-  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-
-  return `M 0 0 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
-};
-
 export default function Roulette() {
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -120,7 +102,6 @@ export default function Roulette() {
     const unsubscribe = rotation.on("change", (latest) => {
       const current = ((latest % 360) + 360) % 360;
       const prev = ((prevAngle % 360) + 360) % 360;
-      const direction = (current - prev + 360) % 360 > 180 ? -1 : 1;
 
       const crossed = tickAngles.some((tick) => {
         return (
@@ -129,20 +110,18 @@ export default function Roulette() {
         );
       });
 
-      if (crossed) {
-        triggerPinShake(direction);
-      }
+      if (crossed) triggerPinShake();
 
       prevAngle = current;
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [rotation, tickAngles, triggerPinShake]);
 
   const shake = useMotionValue(0);
 
-  function triggerPinShake(dir = 1) {
-    const offset = 8 * dir;
+  function triggerPinShake() {
+    const offset = 8;
     shake.set(offset);
     animate(shake, -offset, { duration: 0.1 }).then(() =>
       animate(shake, 0, { duration: 0.1 })
