@@ -108,7 +108,7 @@ export default function BetPanel({
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="flex gap-2 flex-wrap justify-center">
+      <div className="flex gap-2 justify-center min-w-[400px]">
         {betOptions.map((value) => {
           const betAmount = bets[value] || 0;
           const hasBet = betAmount > 0;
@@ -154,7 +154,7 @@ export default function BetPanel({
               </div>
               <button
                 onClick={() => onBet(value)}
-                className={`relative px-3 py-2 rounded-lg shadow text-sm font-semibold w-20 transition-all duration-300
+                className={`relative px-2 py-1.5 rounded-lg shadow text-[12px] font-semibold w-[18%] min-w-[68px] transition-all duration-300
                   bg-gray-100 hover:text-white active:text-white ${color.hover} ${color.active}`}
                 style={
                   hasBet
@@ -165,12 +165,15 @@ export default function BetPanel({
                     : {}
                 }
               >
-                {`x${value}`} 배팅
+                {value}배
                 <br />
-                <span className={hasStreakBonus ? "text-red-500" : ""}>
+                <span
+                  className={`${hasStreakBonus ? "text-red-500" : ""} text-[11px]`}
+                >
                   (x{finalMultiplier}배)
                 </span>
-                <br />({betAmount * 10}점)
+                <br />
+                <span className="text-[11px]">({betAmount * 10}점)</span>
               </button>
             </div>
           );
