@@ -5,6 +5,7 @@ import { motion, useMotionValue, animate } from "framer-motion";
 import BatPanel from "./BatPanel";
 import { useGameStore } from "@/store/useGameStore";
 import BettingHistory from "./BettingHistory";
+import Image from "next/image";
 
 const sectors = [
   "1",
@@ -66,6 +67,9 @@ export default function Roulette() {
     bestWinStreak,
     updateWinStreak,
   } = useGameStore();
+
+  // 현재 점수에 따른 캐릭터 레벨 계산
+  const characterLevel = Math.min(10, Math.floor(score / 100) + 1);
 
   const handleBet = (value: string) => {
     if (spinning) return;
@@ -294,7 +298,22 @@ export default function Roulette() {
           결과: {result}
         </div>
       )}
-      <div className="text-xl font-bold text-blue-600">현재 점수: {score}</div>
+
+      <div className="flex items-center gap-2">
+        <div className="text-xl font-bold text-blue-600">
+          현재 점수: {score}
+        </div>
+        <div className="relative w-12 h-12">
+          <Image
+            src={`/chick-n-spin/assets/characters/chick${characterLevel}.png`}
+            alt={`Level ${characterLevel} character`}
+            fill
+            className="object-contain"
+            priority
+          />
+        </div>
+      </div>
+
       <div className="flex gap-4 text-lg items-center">
         <div className="font-bold text-green-600">연속 성공: {winStreak}회</div>
         {winStreak >= 3 && (

@@ -181,7 +181,7 @@ export default function BetPanel({
         onClick={onReset}
         className="mt-2 text-sm underline text-gray-600 hover:text-red-500"
       >
-        전체 초기화
+        배팅 초기화
       </button>
 
       <div className="mt-2 text-sm text-gray-700 text-center">
