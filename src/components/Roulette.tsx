@@ -3,17 +3,17 @@
 import { useEffect, useState } from "react";
 import { motion, useMotionValue, animate } from "framer-motion";
 import BatPanel from "./BatPanel";
+import { useGameStore } from "@/store/useGameStore";
+import BettingHistory from "./BettingHistory";
 
 const sectors = [
   "1",
   "3",
-  "5",
   "1",
   "3",
   "1",
   "10",
   "1",
-  "3",
   "5",
   "1",
   "3",
@@ -21,10 +21,17 @@ const sectors = [
   "5",
   "1",
   "3",
+  "1",
+  "3",
+  "1",
+  "5",
+  "1",
   "10",
   "1",
-  "3",
   "20",
+  "1",
+  "3",
+  "5",
 ];
 
 const colorMap: Record<string, string> = {
@@ -38,11 +45,29 @@ const colorMap: Record<string, string> = {
 const sectorCount = sectors.length;
 const sectorAngle = 360 / sectorCount;
 
+// SVG 부채꼴 경로를 생성하는 함수 추가
+const createSectorPath = (index: number) => {
+  const startAngle = index * sectorAngle;
+  const endAngle = (index + 1) * sectorAngle;
+  const startRad = (startAngle * Math.PI) / 180;
+  const endRad = (endAngle * Math.PI) / 180;
+  const radius = 150; // SVG 원의 반지름
+
+  const x1 = radius * Math.cos(startRad);
+  const y1 = radius * Math.sin(startRad);
+  const x2 = radius * Math.cos(endRad);
+  const y2 = radius * Math.sin(endRad);
+
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+  return `M 0 0 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+};
+
 export default function Roulette() {
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const rotation = useMotionValue(0);
-  const [score, setScore] = useState(100);
+  const [selectedSectors, setSelectedSectors] = useState<number[]>([]);
   const [bets, setBets] = useState<Record<string, number>>({
     "1": 0,
     "3": 0,
@@ -51,13 +76,19 @@ export default function Roulette() {
     "20": 0,
   });
 
+  const { score, setScore, addHistory } = useGameStore();
+
   const handleBet = (value: string) => {
+    if (spinning) return;
     if (score >= 10) {
       setBets((prev) => ({
         ...prev,
         [value]: prev[value] + 1,
       }));
-      setScore((prev) => prev - 10);
+      setScore(score - 10);
+      if (value === result) {
+        setResult(null);
+      }
     } else {
       alert("배팅할 점수가 부족합니다!");
     }
@@ -68,7 +99,7 @@ export default function Roulette() {
       (sum, count) => sum + count * 10,
       0
     );
-    setScore((prev) => prev + totalBets);
+    setScore(score + totalBets);
     setBets({
       "1": 0,
       "3": 0,
@@ -89,6 +120,7 @@ export default function Roulette() {
     const unsubscribe = rotation.on("change", (latest) => {
       const current = ((latest % 360) + 360) % 360;
       const prev = ((prevAngle % 360) + 360) % 360;
+      const direction = (current - prev + 360) % 360 > 180 ? -1 : 1;
 
       const crossed = tickAngles.some((tick) => {
         return (
@@ -97,7 +129,9 @@ export default function Roulette() {
         );
       });
 
-      if (crossed) triggerPinShake();
+      if (crossed) {
+        triggerPinShake(direction);
+      }
 
       prevAngle = current;
     });
@@ -107,17 +141,29 @@ export default function Roulette() {
 
   const shake = useMotionValue(0);
 
-  function triggerPinShake() {
-    shake.set(8);
-    animate(shake, -8, { duration: 0.2 }).then(() =>
+  function triggerPinShake(dir = 1) {
+    const offset = 8 * dir;
+    shake.set(offset);
+    animate(shake, -offset, { duration: 0.1 }).then(() =>
       animate(shake, 0, { duration: 0.1 })
     );
   }
 
   const spin = () => {
     if (spinning) return;
+
+    const totalBet = Object.values(bets).reduce(
+      (sum, count) => sum + count * 10,
+      0
+    );
+    if (totalBet === 0) {
+      alert("최소 1개 이상 배팅해주세요!");
+      return;
+    }
+
     setSpinning(true);
     setResult(null);
+    setSelectedSectors([]);
 
     const start = rotation.get();
     const fullSpins = 6 + Math.floor(Math.random() * 3);
@@ -135,12 +181,30 @@ export default function Roulette() {
         const resultValue = sectors[index];
         setResult(resultValue);
 
+        const matchingSectors = sectors.reduce((indices, sector, idx) => {
+          if (sector === resultValue) {
+            indices.push(idx);
+          }
+          return indices;
+        }, [] as number[]);
+        setSelectedSectors(matchingSectors);
+
         let winnings = 0;
-        if (bets[resultValue] > 0) {
+        const isWin = bets[resultValue] > 0;
+        if (isWin) {
           const betAmount = bets[resultValue] * 10;
           winnings = betAmount + betAmount * parseInt(resultValue);
-          setScore((prev) => prev + winnings);
+          setScore(score + winnings);
         }
+
+        // 히스토리에 기록 추가
+        addHistory({
+          bets: { ...bets },
+          totalBet,
+          result: resultValue,
+          winAmount: isWin ? winnings : -totalBet,
+          isWin,
+        });
 
         setBets({
           "1": 0,
@@ -171,15 +235,18 @@ export default function Roulette() {
         >
           {sectors.map((s, i) => {
             const angle = (360 / sectorCount) * (i + 0.5);
+            const isSelected = selectedSectors.includes(i);
             return (
               <div
                 key={i}
-                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[14px] font-bold"
+                className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[14px] font-bold
+                  ${isSelected ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" : "text-white"}`}
                 style={{
                   transform: `rotate(${angle}deg) translateY(-120px)`,
                   whiteSpace: "nowrap",
-                  textShadow: "1px 1px 2px rgba(0,0,0,0.6)",
-                  color: "white",
+                  textShadow: isSelected
+                    ? "0 0 10px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.6), 0 0 30px rgba(255,255,255,0.4)"
+                    : "1px 1px 2px rgba(0,0,0,0.6)",
                 }}
               >
                 {s}
@@ -213,7 +280,13 @@ export default function Roulette() {
         </div>
       )}
       <div className="text-xl font-bold text-blue-600">현재 점수: {score}</div>
-      <BatPanel bets={bets} onBet={handleBet} onReset={resetBets} />
+      <BatPanel
+        bets={bets}
+        onBet={handleBet}
+        onReset={resetBets}
+        winningNumber={result}
+      />
+      <BettingHistory />
     </div>
   );
 }
