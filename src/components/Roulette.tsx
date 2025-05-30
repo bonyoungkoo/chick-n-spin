@@ -69,7 +69,7 @@ export default function Roulette() {
   } = useGameStore();
 
   // 현재 점수에 따른 캐릭터 레벨 계산
-  const characterLevel = Math.min(10, Math.floor(score / 100) + 1);
+  const characterLevel = Math.min(10, Math.floor(score / 100));
 
   const handleBet = (value: string) => {
     if (spinning) return;
