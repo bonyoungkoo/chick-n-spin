@@ -78,12 +78,12 @@ export default function Roulette() {
         ...prev,
         [value]: prev[value] + 1,
       }));
-      setScore(score - 10);
+      setScore(score - 10, "배팅");
       if (value === result) {
         setResult(null);
       }
     } else {
-      alert("배팅할 점수가 부족합니다!");
+      alert("배팅할 사료가 부족합니다!");
     }
   };
 
@@ -92,7 +92,7 @@ export default function Roulette() {
       (sum, count) => sum + count * 10,
       0
     );
-    setScore(score + totalBets);
+    setScore(score + totalBets, "배팅 초기화");
     setBets({
       "1": 0,
       "3": 0,
@@ -200,7 +200,6 @@ export default function Roulette() {
           const streakBonus = getStreakMultiplier(winStreak);
 
           if (streakBonus > 0) {
-            // 3~5회는 +1배, 6회 이상은 곱하기
             if (streakBonus === 1) {
               winnings = betAmount + betAmount * (baseMultiplier + streakBonus);
             } else {
@@ -210,7 +209,10 @@ export default function Roulette() {
             winnings = betAmount + betAmount * baseMultiplier;
           }
 
-          setScore(score + winnings);
+          setScore(
+            score + winnings,
+            `${resultValue}배 당첨! (${streakBonus > 0 ? `연승 보너스 ${getStreakText(winStreak)} 적용` : ""})`
+          );
         }
 
         // 히스토리에 기록 추가
@@ -288,29 +290,116 @@ export default function Roulette() {
       <button
         onClick={spin}
         disabled={spinning}
-        className="px-4 py-2 bg-blue-500 text-white rounded-xl"
+        className={`
+          relative px-6 py-3 text-lg font-bold rounded-xl shadow-lg
+          transition-all duration-300 transform
+          ${
+            spinning
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed animate-pulse border-2 border-gray-200"
+              : "bg-gradient-to-br from-amber-400 to-amber-500 text-white hover:from-amber-500 hover:to-amber-600 hover:scale-105 active:scale-95 border-2 border-amber-300"
+          }
+        `}
       >
-        {spinning ? "회전 중..." : "룰렛 돌리기"}
+        <div className="flex items-center gap-2">
+          {spinning ? (
+            <>
+              <div className="animate-spin w-5 h-5 border-3 border-gray-300 border-t-gray-600 rounded-full" />
+              회전 중...
+            </>
+          ) : (
+            <>
+              🎲 룰렛 돌리기
+              <span className="text-amber-200 text-sm ml-1">GO!</span>
+            </>
+          )}
+        </div>
+        {!spinning && (
+          <div className="absolute inset-0 bg-white opacity-0 hover:opacity-10 rounded-xl transition-opacity duration-300" />
+        )}
       </button>
 
       {result && (
-        <div className="mt-4 text-xl font-bold text-gray-800">
-          결과: {result}
-        </div>
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{
+            type: "spring",
+            stiffness: 500,
+            damping: 30,
+          }}
+          className={`
+            mt-4 px-6 py-3 rounded-xl font-bold text-xl
+            flex items-center gap-3 shadow-lg
+            ${parseInt(result) >= 10 ? "animate-bounce" : ""}
+            ${
+              parseInt(result) >= 20
+                ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+                : parseInt(result) >= 10
+                  ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white"
+                  : parseInt(result) >= 5
+                    ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white"
+                    : parseInt(result) >= 3
+                      ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white"
+                      : "bg-gradient-to-r from-yellow-400 to-amber-400 text-amber-900"
+            }
+            border-2 border-opacity-50
+            ${
+              parseInt(result) >= 20
+                ? "border-purple-300"
+                : parseInt(result) >= 10
+                  ? "border-orange-300"
+                  : parseInt(result) >= 5
+                    ? "border-blue-300"
+                    : parseInt(result) >= 3
+                      ? "border-green-300"
+                      : "border-yellow-300"
+            }
+          `}
+        >
+          <span className="text-2xl">
+            {parseInt(result) >= 20
+              ? "🌟"
+              : parseInt(result) >= 10
+                ? "✨"
+                : parseInt(result) >= 5
+                  ? "💫"
+                  : parseInt(result) >= 3
+                    ? "⭐️"
+                    : "🔸"}
+          </span>
+          <div className="flex flex-col items-start">
+            <div className="text-sm opacity-75">룰렛 결과</div>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-black">{result}</span>
+              <span className="text-base opacity-90">배</span>
+            </div>
+          </div>
+        </motion.div>
       )}
 
-      <div className="flex items-center gap-2">
-        <div className="text-xl font-bold text-blue-600">
-          현재 점수: {score}
+      <div className="flex items-center gap-3">
+        <div className="text-xl font-bold bg-amber-100 text-amber-800 px-4 py-2 rounded-xl border-2 border-amber-200 shadow-sm">
+          🌾 남은 사료 {score}개 🥣
         </div>
-        <div className="relative w-12 h-12">
-          <Image
-            src={`/chick-n-spin/assets/characters/chick${characterLevel}.png`}
-            alt={`Level ${characterLevel} character`}
-            fill
-            className="object-contain"
-            priority
-          />
+        <div className="relative group">
+          <div className="w-14 h-14 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-xl border-2 border-yellow-300 shadow-md overflow-hidden p-1">
+            <div className="relative w-full h-full">
+              <Image
+                src={`/chick-n-spin/assets/characters/chick${characterLevel}.png`}
+                alt={`Level ${characterLevel} character`}
+                fill
+                sizes="(max-width: 768px) 56px, 56px"
+                className="object-contain drop-shadow-md transition-transform duration-200 group-hover:scale-110"
+                priority
+              />
+            </div>
+          </div>
+          <div className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-1.5 py-0.5 rounded-md border border-yellow-500 shadow-sm">
+            Lv.{characterLevel}
+          </div>
+          <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xs font-bold text-yellow-800 whitespace-nowrap bg-yellow-100/90 px-2 py-0.5 rounded-full border border-yellow-200">
+            {Math.min(characterLevel * 100, score)}점 달성!
+          </div>
         </div>
       </div>
 
