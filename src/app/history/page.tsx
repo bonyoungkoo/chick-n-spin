@@ -35,7 +35,7 @@ export default function HistoryPage() {
                   alt={`Level ${record.level} character`}
                   fill
                   className="object-contain drop-shadow-md"
-                  priority={index < 3}
+                  unoptimized
                 />
               </div>
 
